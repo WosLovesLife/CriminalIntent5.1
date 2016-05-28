@@ -21,7 +21,7 @@ import java.util.UUID;
 /**
  * Created by zhangH on 2016/5/24.
  */
-public class CrimePagerActivity extends AppCompatActivity {
+public class CrimePagerActivity extends AppCompatActivity implements CrimeFragment.Callbacks{
     private static final String EXTRA_CRIME_ID =
             "com.bignerdranch.android.criminalintent.crime_id";
 
@@ -63,5 +63,16 @@ public class CrimePagerActivity extends AppCompatActivity {
                 mViewPager.setCurrentItem(i);
             }
         }
+    }
+
+    /** 由于本Activity和CrimeListActivity都可能托管CrimeFragment,
+     * 所以为了不发生异常,这里需要实现CrimeFragment的回调接口 */
+    @Override
+    public void onCrimeUpdated(Crime crime) {
+    }
+
+    @Override
+    public void onCrimeRemove(Fragment fragment) {
+        finish();
     }
 }

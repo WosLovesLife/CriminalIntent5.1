@@ -1,6 +1,7 @@
 package com.bignerdranch.android.criminalintent51.fragment;
 
 import android.app.Activity;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -24,6 +25,7 @@ import com.bignerdranch.android.criminalintent51.R;
 import com.bignerdranch.android.criminalintent51.bean.Crime;
 import com.bignerdranch.android.criminalintent51.single.CrimeLab;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -42,7 +44,8 @@ public class CrimeListFragment extends Fragment {
 
     private Callbacks mCallbacks;
 
-    public interface Callbacks{
+    public interface Callbacks {
+        /** 当某个条目被选中时 */
         void onCrimeSelected(Crime crime);
     }
 
@@ -76,6 +79,7 @@ public class CrimeListFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_crime_list, container, false);
         mCrimeRecyclerView = (RecyclerView) view.findViewById(R.id.crime_recycle_view);
         mCrimeRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
+        mCrimeRecyclerView.setHasFixedSize(true);
         mHintText = (TextView) view.findViewById(R.id.crime_hint_text_view);
 
         return view;
@@ -93,7 +97,7 @@ public class CrimeListFragment extends Fragment {
      * 为了避免重复创建对象,加上判断,
      * 由于Adapter中的数据集合直接引用了持久层数据,所以这里不再重复过去数据
      */
-    private void updateUI() {
+    public void updateUI() {
         CrimeLab crimeLab = CrimeLab.get(getActivity());
         List<Crime> crimes = crimeLab.getCrimes();
 
@@ -113,9 +117,12 @@ public class CrimeListFragment extends Fragment {
 
         private List<Crime> mCrimes;
 
+        private List<View> mViews;
+
         /** 外部将数据集合通过构造传递进来 */
         public CrimeAdapter(List<Crime> crimes) {
             mCrimes = crimes;
+            mViews = new ArrayList<>();
         }
 
         public void setCrimes(List<Crime> crimes) {
@@ -131,12 +138,15 @@ public class CrimeListFragment extends Fragment {
         public CrimeHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             LayoutInflater inflater = LayoutInflater.from(getActivity());
             View view = inflater.inflate(R.layout.list_item_crime, parent, false);
+            mViews.add(view);
             return new CrimeHolder(view);
         }
 
         /** 每次刷新条目都会调用,从Holder中获取组件对象并设置数据 */
         @Override
         public void onBindViewHolder(CrimeHolder holder, int position) {
+            /** 为每一个ViewHolder设置Tag */
+            holder.mView.setTag(mCrimes.get(position));
             Crime crime = mCrimes.get(position);
             holder.bindCrime(crime);
         }
@@ -152,30 +162,23 @@ public class CrimeListFragment extends Fragment {
 
         private static final String TAG = "CrimeHolder";
         private Crime mCrime;
+        public View mView;
         public TextView mTitleTextView;
         public TextView mDateTextView;
         public CheckBox mSolvedCheckBox;
 
         public CrimeHolder(final View itemView) {
             super(itemView);
+            mView = itemView;
             mTitleTextView = (TextView) itemView.findViewById(R.id.list_item_crime_title_text_view);
             mDateTextView = (TextView) itemView.findViewById(R.id.list_item_crime_date_text_view);
             mSolvedCheckBox = (CheckBox) itemView.findViewById(R.id.list_item_crime_solved_check_box);
 
-            itemView.setOnClickListener(new View.OnClickListener() {
+            mView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    Log.w(TAG, "onClick: " );
+                    Log.w(TAG, "onClick: ");
                     mCallbacks.onCrimeSelected(mCrime);
-                }
-            });
-
-            mSolvedCheckBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-                @Override
-                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                    Log.w(TAG, "onCheckedChanged: isChecked: "+isChecked );
-                    mCrime.setSolved(isChecked);
-                    CrimeLab.get(getActivity()).updateCrime(mCrime);
                 }
             });
         }
@@ -187,6 +190,7 @@ public class CrimeListFragment extends Fragment {
             mDateTextView.setText(DateFormat.format("cccc,MMMd,yyyy", crime.getDate()));
             mSolvedCheckBox.setChecked(mCrime.isSolved());
         }
+
     }
 
     @Override
@@ -228,7 +232,7 @@ public class CrimeListFragment extends Fragment {
             subtitle = getResources().getQuantityString(R.plurals.subtitle_plural, size, size);
         }
         ActionBar supportActionBar = activity.getSupportActionBar();
-        if (supportActionBar != null){
+        if (supportActionBar != null) {
             supportActionBar.setSubtitle(subtitle);
         }
     }

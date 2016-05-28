@@ -6,7 +6,6 @@ import android.content.ContentResolver;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
-import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.ContactsContract;
@@ -37,7 +36,6 @@ import com.bignerdranch.android.criminalintent51.R;
 import com.bignerdranch.android.criminalintent51.bean.Crime;
 import com.bignerdranch.android.criminalintent51.single.CrimeLab;
 import com.project.myutilslibrary.pictureloader.PictureLoader;
-import com.project.myutilslibrary.pictureloader.PictureScaleUtils;
 import com.project.myutilslibrary.view.MarqueeButton;
 
 import java.io.File;
@@ -70,6 +68,30 @@ public class CrimeFragment extends Fragment {
     private ImageView mPhotoView;
     private ImageButton mPhotoButton;
     private File mPhotoFile;
+
+
+    private Callbacks mCallbacks;
+
+    public interface Callbacks {
+
+        /** 实时同步明细页和列表页的的Crime对象状态 */
+        void onCrimeUpdated(Crime crime);
+
+        /** 当页面需要被卸载时触发(例如用户点击了Toolbar上的删除menuItem) */
+        void onCrimeRemove(Fragment fragment);
+    }
+
+    @Override
+    public void onAttach(Activity activity) {
+        super.onAttach(activity);
+        mCallbacks = (Callbacks) activity;
+    }
+
+    @Override
+    public void onDetach() {
+        super.onDetach();
+        mCallbacks = null;
+    }
 
     public static CrimeFragment newInstance(UUID crimeId) {
         Bundle args = new Bundle();
@@ -105,6 +127,7 @@ public class CrimeFragment extends Fragment {
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 mCrime.setTitle(s.toString());
+                updateCrime();
             }
 
             @Override
@@ -131,6 +154,7 @@ public class CrimeFragment extends Fragment {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 mCrime.setSolved(isChecked);
+                updateCrime();
             }
         });
 
@@ -290,6 +314,12 @@ public class CrimeFragment extends Fragment {
         }
     }
 
+    private void updateCrime(){
+        CrimeLab.get(getActivity()).updateCrime(mCrime);
+        mCallbacks.onCrimeUpdated(mCrime);
+    }
+
+    @Nullable
     private String getSuspectPhoneNumber(Intent data) {
         String phoneNumber = null;
         ContentResolver resolver = getActivity().getContentResolver();
@@ -343,7 +373,8 @@ public class CrimeFragment extends Fragment {
     @Override
     public void onPause() {
         super.onPause();
-        CrimeLab.get(getActivity()).updateCrime(mCrime);
+//        CrimeLab.get(getActivity()).updateCrime(mCrime);
+        updateCrime();
     }
 
     private void updateUI() {
@@ -353,6 +384,7 @@ public class CrimeFragment extends Fragment {
     private void updateDate() {
         CharSequence format = "cccc,MMMd,yyyy";
         mDateButton.setText(DateFormat.format(format, mCrime.getDate()).toString());
+        updateCrime();
     }
 
     private void updatePicture() {
@@ -376,7 +408,9 @@ public class CrimeFragment extends Fragment {
         switch (item.getItemId()) {
             case R.id.menu_item_delete_crime:
                 CrimeLab.get(getActivity()).deleteCrime(mCrime);
-                getActivity().finish();
+                mCallbacks.onCrimeRemove(this);
+//                getActivity().finish();
+                updateCrime();
                 return true;
         }
         return super.onOptionsItemSelected(item);

@@ -12,7 +12,7 @@ import com.bignerdranch.android.criminalintent51.fragment.CrimeListFragment;
 /**
  * Created by zhangH on 2016/5/24.
  */
-public class CrimeListActivity extends SingleFragmentActivity implements CrimeListFragment.Callbacks{
+public class CrimeListActivity extends SingleFragmentActivity implements CrimeListFragment.Callbacks,CrimeFragment.Callbacks{
 
     @Override
     protected int getLayoutResId() {
@@ -38,5 +38,16 @@ public class CrimeListActivity extends SingleFragmentActivity implements CrimeLi
             CrimeFragment crimeFragment = CrimeFragment.newInstance(crime.getId());
             getSupportFragmentManager().beginTransaction().replace(R.id.detail_fragment_container,crimeFragment).commit();
         }
+    }
+
+    @Override
+    public void onCrimeUpdated(Crime crime) {
+        CrimeListFragment listFragment = (CrimeListFragment) getSupportFragmentManager().findFragmentById(R.id.fragment_container);
+        listFragment.updateUI();
+    }
+
+    @Override
+    public void onCrimeRemove(Fragment fragment) {
+        getSupportFragmentManager().beginTransaction().remove(fragment).commit();
     }
 }
